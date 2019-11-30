@@ -1,0 +1,93 @@
+{
+  "project_info": {
+    "project_number": "88108446658",
+    "firebase_url": "https://wassal-ba583.firebaseio.com",
+    "project_id": "wassal-ba583",
+    "storage_bucket": "wassal-ba583.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:88108446658:android:bcee49bae4a93514c85c5b",
+        "android_client_info": {
+          "package_name": "com.ahmed.martin.wassal"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "88108446658-i0gjda36ajsvo5bgmutr3fhg875iso0u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ahmed.martin.wassal",
+            "certificate_hash": "792ffbee303130d50630a7ab7c078c0851ae553c"
+          }
+        },
+        {
+          "client_id": "88108446658-7u12h7du2s2ncpk5sftev88edeet3h02.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ahmed.martin.wassal",
+            "certificate_hash": "fa3241c84857072a64945cc34ccddc24354af0ff"
+          }
+        },
+        {
+          "client_id": "88108446658-tc2nebiu3fnthcl3eesgoaboqdtq32tq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpf_E9Zqh3NIPQIky3aNOOJbyR9a7nxRU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "88108446658-tc2nebiu3fnthcl3eesgoaboqdtq32tq.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:88108446658:android:1bfbd615da971554c85c5b",
+        "android_client_info": {
+          "package_name": "com.ahmed.martin.wassal_delivery"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "88108446658-gdp3kpkd43de426bf0dnnnppa8i23hdo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ahmed.martin.wassal_delivery",
+            "certificate_hash": "fa3241c84857072a64945cc34ccddc24354af0ff"
+          }
+        },
+        {
+          "client_id": "88108446658-tc2nebiu3fnthcl3eesgoaboqdtq32tq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpf_E9Zqh3NIPQIky3aNOOJbyR9a7nxRU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "88108446658-tc2nebiu3fnthcl3eesgoaboqdtq32tq.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,2 @@
+include ':app'
+rootProject.name='Wassal_delivery'
