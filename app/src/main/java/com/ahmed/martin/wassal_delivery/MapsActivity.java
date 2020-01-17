@@ -2,18 +2,38 @@ package com.ahmed.martin.wassal_delivery;
 
 import androidx.fragment.app.FragmentActivity;
 
+import android.graphics.Color;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
+
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
+
+    private Double s_lat,s_long,r_lat,r_long,d_lat,d_long;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -23,6 +43,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        s_lat = getIntent().getDoubleExtra("s_lat",0);
+        s_long = getIntent().getDoubleExtra("s_long",0);
+        r_lat = getIntent().getDoubleExtra("r_lat",0);
+        r_long = getIntent().getDoubleExtra("r_long",0);
+        d_lat = getIntent().getDoubleExtra("d_lat",0);
+        d_long = getIntent().getDoubleExtra("d_long",0);
+
+
+
+
     }
 
 
@@ -39,9 +70,191 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        // sender
+        LatLng s_latLng = new LatLng(s_lat, s_long);
+        MarkerOptions s_marker = new MarkerOptions().position(s_latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.location)).title("Sender Location");
+        mMap.addMarker(s_marker);
+        // receiver
+        LatLng r_latLng = new LatLng(r_lat, r_long);
+        MarkerOptions r_marker = new MarkerOptions().position(r_latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.location)).title("Sender Location");
+        mMap.addMarker(r_marker);
+        //delivery
+        LatLng d_latLng = new LatLng(d_lat, d_long);
+        MarkerOptions d_marker = new MarkerOptions().position(d_latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.location)).title("Sender Location");
+        mMap.addMarker(d_marker);
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(d_latLng, 15));
+
+
+
+        LatLng origin = new LatLng(s_lat,s_long);
+        LatLng dest = new LatLng(r_lat,r_long);
+        // draw line between sender and receiver
+        // Getting URL to the Google Directions API
+        String url = getDirectionsUrl(origin, dest);
+
+        DownloadTask downloadTask_s_r = new DownloadTask();
+
+        // Start downloading json data from Google Directions API
+        downloadTask_s_r.execute(url);
+
+
+        // draw line between sender and delivery
+        dest = new LatLng(d_lat,d_long);
+        url = getDirectionsUrl(origin, dest);
+
+        DownloadTask downloadTask_s_d = new DownloadTask();
+
+        // Start downloading json data from Google Directions API
+        downloadTask_s_d.execute(url);
     }
+
+    private class DownloadTask extends AsyncTask<String, Void, String> {
+
+        @Override
+        protected String doInBackground(String... url) {
+
+            String data = "";
+
+            try {
+                data = downloadUrl(url[0]);
+            } catch (Exception e) {
+                Toast.makeText(MapsActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+            return data;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+
+            ParserTask parserTask = new ParserTask();
+
+
+            parserTask.execute(result);
+
+        }
+    }
+
+
+
+    private class ParserTask extends AsyncTask<String, Integer, List<List<HashMap<String, String>>>> {
+
+        // Parsing the data in non-ui thread
+        @Override
+        protected List<List<HashMap<String, String>>> doInBackground(String... jsonData) {
+
+            JSONObject jObject;
+            List<List<HashMap<String, String>>> routes = null;
+
+            try {
+                jObject = new JSONObject(jsonData[0]);
+                DirectionsJSONParser parser = new DirectionsJSONParser();
+
+                routes = parser.parse(jObject);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return routes;
+        }
+
+
+
+        @Override
+        protected void onPostExecute(List<List<HashMap<String, String>>> result) {
+
+            ArrayList points = null;
+            PolylineOptions lineOptions = null;
+            MarkerOptions markerOptions = new MarkerOptions();
+
+            for (int i = 0; i < result.size(); i++) {
+                points = new ArrayList();
+                lineOptions = new PolylineOptions();
+
+                List<HashMap<String,String>> path = result.get(i);
+
+                for (int j = 0; j < path.size(); j++) {
+                    HashMap<String,String> point = path.get(j);
+
+                    double lat = Double.parseDouble(point.get("lat"));
+                    double lng = Double.parseDouble(point.get("lng"));
+                    LatLng position = new LatLng(lat, lng);
+
+                    points.add(position);
+                }
+
+
+                lineOptions.addAll(points);
+                lineOptions.width(12);
+                lineOptions.color(Color.BLACK);
+                lineOptions.geodesic(true);
+
+            }
+
+// Drawing polyline in the Google Map for the i-th route
+            mMap.addPolyline(lineOptions);
+        }
+
+    }
+
+    private String getDirectionsUrl(LatLng origin, LatLng dest) {
+
+        // Origin of route
+        String str_origin = "origin=" + origin.latitude + "," + origin.longitude;
+
+        // Destination of route
+        String str_dest = "destination=" + dest.latitude + "," + dest.longitude;
+
+        // Sensor enabled
+        String sensor = "sensor=false";
+        String mode = "mode=driving";
+        String key = "key="+"AIzaSyBnL5s35NWzkAjkGxez5KLaPsaSHWb-SbY";//+getResources().getString(R.string.google_maps_key);
+        // Building the parameters to the web service
+        String parameters = str_origin + "&" + str_dest + "&" + sensor + "&" + mode + "&" + key;
+
+        // Output format
+        String output = "json";
+
+        // Building the url to the web service
+        String url = "https://maps.googleapis.com/maps/api/directions/" + output + "?" + parameters;
+
+
+        return url;
+    }
+
+
+    private String downloadUrl(String strUrl) throws IOException {
+        String data = "";
+        InputStream iStream = null;
+        HttpURLConnection urlConnection = null;
+        try {
+            URL url = new URL(strUrl);
+
+            urlConnection = (HttpURLConnection) url.openConnection();
+
+            urlConnection.connect();
+
+            iStream = urlConnection.getInputStream();
+
+            BufferedReader br = new BufferedReader(new InputStreamReader(iStream));
+
+            StringBuffer sb = new StringBuffer();
+
+            String line = "";
+            while ((line = br.readLine()) != null) {
+                sb.append(line);
+            }
+
+            data = sb.toString();
+
+            br.close();
+
+        } catch (Exception e) {
+            Toast.makeText(this, e.toString(), Toast.LENGTH_SHORT).show();
+        } finally {
+            iStream.close();
+            urlConnection.disconnect();
+        }
+        return data;
+    }
+
 }

@@ -4,8 +4,9 @@ import java.io.Serializable;
 
 public class order_data implements Serializable {
 
-    private String s_uid,r_name,r_phone,r_address,description,weight,provide_pay,delivery_estimate,date ;
+    private String s_uid,r_name,r_phone,r_address,description,weight,provide_pay,delivery_estimate,date,order_id ;
     private Double r_long,r_lat,s_long,s_lat,KM;
+    private String city,delivery_type;
 
 
 
@@ -73,10 +74,6 @@ public class order_data implements Serializable {
         this.delivery_estimate = delivery_estimate;
     }
 
-    public void setDate(String date) {
-        this.date = date;
-    }
-
 
     public void setR_long(Double r_long) {
         this.r_long = r_long;
@@ -125,5 +122,33 @@ public class order_data implements Serializable {
 
     public void setKM(Double KM) {
         this.KM = KM;
+    }
+
+    public String getOrder_id() {
+        return order_id;
+    }
+
+    public void setOrder_id(String order_id) {
+        this.order_id = order_id;
+    }
+
+    public void setDate(String date) {
+        this.date = date;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getDelivery_type() {
+        return delivery_type;
+    }
+
+    public void setDelivery_type(String delivery_type) {
+        this.delivery_type = delivery_type;
     }
 }

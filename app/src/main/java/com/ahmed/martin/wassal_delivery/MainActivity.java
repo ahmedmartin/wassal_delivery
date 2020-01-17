@@ -23,6 +23,7 @@ import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -56,6 +57,8 @@ import java.sql.Time;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -76,9 +79,11 @@ public class MainActivity extends AppCompatActivity {
 
     ListView km_list;
 
+
+
     ArrayAdapter <Double> adapter ;
     ArrayList <Double> km = new ArrayList<>();
-    ArrayList <order_data> orders = new ArrayList<>();
+    ArrayList <order_data> orders_list = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,28 +91,55 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
 
-        /*
-        LatLng origin = new LatLng(30.1233853,31.26092879999999);
-        LatLng dest = new LatLng(30.04453217526273,31.2364224717021);
 
-
-         // draw line between 2 lines
-        // Getting URL to the Google Directions API
-        String url = getDirectionsUrl(origin, dest);
-
-        DownloadTask downloadTask = new DownloadTask();
-
-        // Start downloading json data from Google Directions API
-        downloadTask.execute(url);
-
-         */
 
         km_list = findViewById(R.id.km_list);
         adapter = new ArrayAdapter<Double>(this,android.R.layout.simple_list_item_1,km);
         km_list.setAdapter(adapter);
+        km_list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                String currentDate = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(new Date());
+                Intent details = new Intent(MainActivity.this,order_details.class);
+                orders_list.get(i).setCity(city);
+                orders_list.get(i).setDate(currentDate);
+                orders_list.get(i).setDelivery_type(delivery_type);
+                details.putExtra("order",orders_list.get(i));
+                startActivity(details);
+
+            }
+        });
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
+    }
+
+    // خد الكود ده زى ماهو كده يا عمرو و حطه ف sign in  بالاضافه لشويه تعديلات
+    DatabaseReference d_ref;
+    ValueEventListener d_listen;
+    @Override
+    protected void onStart() {
+        super.onStart();
+        d_ref = FirebaseDatabase.getInstance().getReference().child("delivery").child("d_id").child("order");
+        d_listen = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if(dataSnapshot.exists()){
+                    order_data order = dataSnapshot.getValue(order_data.class);
+                    Intent details = new Intent(MainActivity.this,order_details.class);
+                    details.putExtra("order",order);
+                    details.putExtra("have_order",true);
+                    startActivity(details);
+                }
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        };
+        d_ref.addValueEventListener(d_listen);
     }
 
     public void get_my_place(View view) {
@@ -115,18 +147,22 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    ValueEventListener listener ;
+    DatabaseReference ref;
+
     private void get_useres_data() {
 
 
         String currentDate = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(new Date());
 
-        DatabaseReference ref = FirebaseDatabase.getInstance().getReference().child("order").child(currentDate).child(city).child(delivery_type);
+         ref= FirebaseDatabase.getInstance().getReference().child("order").child(currentDate).child(city).child(delivery_type);
 
-        ref.addValueEventListener(new ValueEventListener() {
+         listener = new ValueEventListener() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                orders .clear();
+            public void onDataChange( DataSnapshot dataSnapshot) {
 
+                orders_list .clear();
+                km.clear();
                 int i =0;
                 for(DataSnapshot data : dataSnapshot.getChildren()){
                    order_data order =data.getValue(order_data.class);
@@ -136,22 +172,44 @@ public class MainActivity extends AppCompatActivity {
                             results);
 
                     order.setKM((double) results[0]/1000);
+                    order.setOrder_id(data.getKey());
                     if(results[0]/1000 <= 7){
-                        orders.add(order);
+                        orders_list.add(order);
                         km.add(order.getKM());
+                        adapter.notifyDataSetChanged();
                     }
                     i++;
                 }
 
+                /*
                 if(i==dataSnapshot.getChildrenCount()){
-                    adapter.notifyDataSetChanged();
-                }
+                    // arrange order_list by km (kilo meter)
+                    Collections.sort(orders_list, new Comparator<order_data>() {
+                        @Override
+                        public int compare(order_data o1, order_data o2) {
+                            return o1.getKM().compareTo(o2.getKM());
+                        }
+                    });
 
+
+                }
+*/
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) { }
-        });
+        };
+        ref.addValueEventListener(listener);
+    }
+
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if(ref!=null)
+        ref.removeEventListener(listener);
+        if(d_ref!=null)
+        d_ref.removeEventListener(d_listen);
     }
 
     private boolean checkPermissions(){
@@ -211,24 +269,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
-    private void get_delivery_city(LatLng position){
-
-        try {
-            Geocoder geocoder = new Geocoder(MainActivity.this, Locale.getDefault());
-            List<Address> addresses = geocoder.getFromLocation(position.latitude, position.longitude, 1);
-            if (addresses != null && addresses.size() > 0) {
-                city = addresses.get(0).getAdminArea();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        get_useres_data();
-
-    }
-
-
     private boolean isLocationEnabled() {
         LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) || locationManager.isProviderEnabled(
@@ -263,154 +303,23 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    /*
-    private class DownloadTask extends AsyncTask<String, Void, String> {
+    private void get_delivery_city(LatLng position){
 
-        @Override
-        protected String doInBackground(String... url) {
-
-            String data = "";
-
-            try {
-                data = downloadUrl(url[0]);
-            } catch (Exception e) {
-                Log.d("Background Task", e.toString());
-            }
-            return data;
-        }
-
-        @Override
-        protected void onPostExecute(String result) {
-            super.onPostExecute(result);
-
-            ParserTask parserTask = new ParserTask();
-
-
-            parserTask.execute(result);
-
-        }
-    }
-
-
-
-    private class ParserTask extends AsyncTask<String, Integer, List<List<HashMap<String, String>>>> {
-
-        // Parsing the data in non-ui thread
-        @Override
-        protected List<List<HashMap<String, String>>> doInBackground(String... jsonData) {
-
-            JSONObject jObject;
-            List<List<HashMap<String, String>>> routes = null;
-
-            try {
-                jObject = new JSONObject(jsonData[0]);
-                DirectionsJSONParser parser = new DirectionsJSONParser();
-
-                routes = parser.parse(jObject);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return routes;
-        }
-
-        @Override
-        protected void onPostExecute(List<List<HashMap<String, String>>> result) {
-            ArrayList local_points = null;
-            //PolylineOptions lineOptions = null;
-           // MarkerOptions markerOptions = new MarkerOptions();
-
-            for (int i = 0; i < result.size(); i++) {
-                local_points = new ArrayList();
-               // lineOptions = new PolylineOptions();
-
-                List<HashMap<String, String>> path = result.get(i);
-
-                for (int j = 0; j < path.size(); j++) {
-                    HashMap<String, String> point = path.get(j);
-
-                    double lat = Double.parseDouble(point.get("lat"));
-                    double lng = Double.parseDouble(point.get("lng"));
-                    LatLng position = new LatLng(lat, lng);
-
-                    //Toast.makeText(MainActivity.this, lat+" "+lng, Toast.LENGTH_SHORT).show();
-                    local_points.add(position);
-                }
-
-                points .add(local_points);
-               /* lineOptions.addAll(points);
-                lineOptions.width(12);
-                lineOptions.color(Color.RED);
-                lineOptions.geodesic(true);
-
-                
-
-            }
-
-// Drawing polyline in the Google Map for the i-th route
-            //mMap.addPolyline(lineOptions);
-        }
-    }
-
-    private String getDirectionsUrl(LatLng origin, LatLng dest) {
-
-        // Origin of route
-        String str_origin = "origin=" + origin.latitude + "," + origin.longitude;
-
-        // Destination of route
-        String str_dest = "destination=" + dest.latitude + "," + dest.longitude;
-
-        // Sensor enabled
-        String sensor = "sensor=false";
-        String mode = "mode=driving";
-        String key = "key="+"AIzaSyBnL5s35NWzkAjkGxez5KLaPsaSHWb-SbY";//+getResources().getString(R.string.google_maps_key);
-        // Building the parameters to the web service
-        String parameters = str_origin + "&" + str_dest + "&" + sensor + "&" + mode + "&" + key;
-
-        // Output format
-        String output = "json";
-
-        // Building the url to the web service
-        String url = "https://maps.googleapis.com/maps/api/directions/" + output + "?" + parameters;
-
-
-        return url;
-    }
-
-
-    private String downloadUrl(String strUrl) throws IOException {
-        String data = "";
-        InputStream iStream = null;
-        HttpURLConnection urlConnection = null;
         try {
-            URL url = new URL(strUrl);
-
-            urlConnection = (HttpURLConnection) url.openConnection();
-
-            urlConnection.connect();
-
-            iStream = urlConnection.getInputStream();
-
-            BufferedReader br = new BufferedReader(new InputStreamReader(iStream));
-
-            StringBuffer sb = new StringBuffer();
-
-            String line = "";
-            while ((line = br.readLine()) != null) {
-                sb.append(line);
+            Geocoder geocoder = new Geocoder(MainActivity.this, Locale.getDefault());
+            List<Address> addresses = geocoder.getFromLocation(position.latitude, position.longitude, 1);
+            if (addresses != null && addresses.size() > 0) {
+                city = addresses.get(0).getAdminArea();
             }
-
-            data = sb.toString();
-
-            br.close();
-
-        } catch (Exception e) {
-            Toast.makeText(this, e.toString(), Toast.LENGTH_SHORT).show();
-        } finally {
-            iStream.close();
-            urlConnection.disconnect();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        return data;
+
+        get_useres_data();
+
     }
 
-     */
+
+
+
 }
