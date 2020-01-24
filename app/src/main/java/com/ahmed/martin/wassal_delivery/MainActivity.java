@@ -25,7 +25,9 @@ import android.view.View;
 
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -39,6 +41,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -71,27 +74,44 @@ public class MainActivity extends AppCompatActivity {
 
 
     ArrayList <ArrayList<LatLng>> points = new ArrayList<>();
+    private Spinner delivery_type_spinner;
+
 
     String city="";
-    String delivery_type = "Car";  // mtlop mnk ya 3mr tgeb el kema de b el code
+    String delivery_type = "";  // mtlop mnk ya 3mr tgeb el kema de b el code
 
     Double delivery_lat,delivery_long;
 
     ListView km_list;
 
-
-
     ArrayAdapter <Double> adapter ;
     ArrayList <Double> km = new ArrayList<>();
     ArrayList <order_data> orders_list = new ArrayList<>();
+    private ArrayAdapter<String> delivery_type_adapter;
+    private String userId;
+    private FirebaseAuth mAuth;
+    private Button perinfo, signout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mAuth = FirebaseAuth.getInstance();
+        perinfo = findViewById(R.id.personalInfo);
+        signout = findViewById(R.id.signout);
+        userId = mAuth.getCurrentUser().getUid();
+        delivery_type_spinner = findViewById(R.id.delivery_type);
+        // delivey type spinner
+        delivery_type_spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
 
-
+                delivery_type = types.get(i);
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {}
+        });
 
         km_list = findViewById(R.id.km_list);
         adapter = new ArrayAdapter<Double>(this,android.R.layout.simple_list_item_1,km);
@@ -109,27 +129,45 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+        perinfo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this, UserInfoActivity.class));
+            }
+        });
+        signout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                FirebaseAuth.getInstance().signOut();
+                startActivity(new Intent(MainActivity.this, sign_in.class));
+                finish();
+            }
+        });
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
     }
 
-    // خد الكود ده زى ماهو كده يا عمرو و حطه ف sign in  بالاضافه لشويه تعديلات
     DatabaseReference d_ref;
     ValueEventListener d_listen;
+    ArrayList<String> types = new ArrayList<>();
     @Override
     protected void onStart() {
         super.onStart();
-        d_ref = FirebaseDatabase.getInstance().getReference().child("delivery").child("d_id").child("order");
+        userId = mAuth.getCurrentUser().getUid();
+        d_ref = FirebaseDatabase.getInstance().getReference().child("delivery").child(userId).child("delivery type");
         d_listen = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 if(dataSnapshot.exists()){
-                    order_data order = dataSnapshot.getValue(order_data.class);
-                    Intent details = new Intent(MainActivity.this,order_details.class);
-                    details.putExtra("order",order);
-                    details.putExtra("have_order",true);
-                    startActivity(details);
+                    types.clear();
+                    for (DataSnapshot d : dataSnapshot.getChildren()) {
+                        types.add(d.getValue().toString().trim());
+
+                    }
+                    delivery_type_adapter = new ArrayAdapter<>(MainActivity.this,R.layout.spinner_item,types);
+                    delivery_type_adapter.setDropDownViewResource(R.layout.spinner_item);
+                    delivery_type_spinner.setAdapter(delivery_type_adapter);
                 }
 
             }
@@ -142,6 +180,23 @@ public class MainActivity extends AppCompatActivity {
         d_ref.addValueEventListener(d_listen);
     }
 
+//    private void get_delivery_type(){
+//       DatabaseReference reference = FirebaseDatabase.getInstance().getReference().child("delivery")
+//               .child(userId).child("delivery type");
+//               reference.addValueEventListener(new ValueEventListener() {
+//                   @Override
+//                   public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+//
+//                   }
+//
+//                   @Override
+//                   public void onCancelled(@NonNull DatabaseError databaseError) {
+//
+//                   }
+//               });
+//   }
+
+
     public void get_my_place(View view) {
         getLastLocation();
 
@@ -153,9 +208,11 @@ public class MainActivity extends AppCompatActivity {
     private void get_useres_data() {
 
 
-        String currentDate = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(new Date());
+        String currentDate = new SimpleDateFormat("dd-M-yyyy", Locale.getDefault()).format(new Date());
 
-         ref= FirebaseDatabase.getInstance().getReference().child("order").child(currentDate).child(city).child(delivery_type);
+
+
+         ref= FirebaseDatabase.getInstance().getReference().child("order").child("23-1-2020").child(city).child(delivery_type);
 
          listener = new ValueEventListener() {
             @Override
@@ -207,9 +264,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         if(ref!=null)
-        ref.removeEventListener(listener);
+            ref.removeEventListener(listener);
         if(d_ref!=null)
-        d_ref.removeEventListener(d_listen);
+            d_ref.removeEventListener(d_listen);
     }
 
     private boolean checkPermissions(){

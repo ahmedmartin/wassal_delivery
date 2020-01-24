@@ -2,9 +2,13 @@ package com.ahmed.martin.wassal_delivery;
 
 import androidx.fragment.app.FragmentActivity;
 
+import android.content.Intent;
 import android.graphics.Color;
+import android.location.Address;
+import android.location.Geocoder;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -16,6 +20,8 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
+
+
 
 import org.json.JSONObject;
 
@@ -34,6 +40,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private GoogleMap mMap;
 
     private Double s_lat,s_long,r_lat,r_long,d_lat,d_long;
+    private user_data user_details;
+    private String type,address, fromsignup, fromedit;
+    private Double latitude , longitude;
+    private MarkerOptions marker;
+    private boolean select_address;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,6 +63,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         r_long = getIntent().getDoubleExtra("r_long",0);
         d_lat = getIntent().getDoubleExtra("d_lat",0);
         d_long = getIntent().getDoubleExtra("d_long",0);
+        user_details =(user_data) getIntent().getSerializableExtra("user");
+        fromsignup = getIntent().getStringExtra("signup");
+        fromedit = getIntent().getStringExtra("edit");
 
 
 
@@ -70,42 +86,75 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        // sender
-        LatLng s_latLng = new LatLng(s_lat, s_long);
-        MarkerOptions s_marker = new MarkerOptions().position(s_latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.location)).title("Sender Location");
-        mMap.addMarker(s_marker);
-        // receiver
-        LatLng r_latLng = new LatLng(r_lat, r_long);
-        MarkerOptions r_marker = new MarkerOptions().position(r_latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.location)).title("Sender Location");
-        mMap.addMarker(r_marker);
-        //delivery
-        LatLng d_latLng = new LatLng(d_lat, d_long);
-        MarkerOptions d_marker = new MarkerOptions().position(d_latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.location)).title("Sender Location");
-        mMap.addMarker(d_marker);
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(d_latLng, 15));
+        if(fromsignup.equals("yes")|| fromedit.equals("yes")){
+            mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+                @Override
+                public void onMapClick(LatLng latLng) {
+                    latitude = latLng.latitude;
+                    longitude = latLng.longitude;
+                    Geocoder geo =new Geocoder(MapsActivity.this);
+                    List<Address> list =new ArrayList<>();
+                    try {
+                        list=geo.getFromLocation(latitude,longitude,1);
+                    } catch (IOException e) {
+
+                    }
+                    if(list.size()>0) {
+                        mMap.clear();
+                        address = list.get(0).getAddressLine(0);
+                        marker = new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.location)).title(address);
+                        mMap.addMarker(marker);
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 18));
+                        select_address = true;
+                    }else{
+                        Toast.makeText(MapsActivity.this,"error",Toast.LENGTH_LONG).show();
+                    }
+                }
+            });
+            LatLng sydney = new LatLng(30.0440680, 31.2355120);
+            MarkerOptions mar = new MarkerOptions().position(sydney);
+            mMap.addMarker(mar);
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(sydney,18));
 
 
+        }else {
 
-        LatLng origin = new LatLng(s_lat,s_long);
-        LatLng dest = new LatLng(r_lat,r_long);
-        // draw line between sender and receiver
-        // Getting URL to the Google Directions API
-        String url = getDirectionsUrl(origin, dest);
+            // sender
+            LatLng s_latLng = new LatLng(s_lat, s_long);
+            MarkerOptions s_marker = new MarkerOptions().position(s_latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.location)).title("Sender Location");
+            mMap.addMarker(s_marker);
+            // receiver
+            LatLng r_latLng = new LatLng(r_lat, r_long);
+            MarkerOptions r_marker = new MarkerOptions().position(r_latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.location)).title("Sender Location");
+            mMap.addMarker(r_marker);
+            //delivery
+            LatLng d_latLng = new LatLng(d_lat, d_long);
+            MarkerOptions d_marker = new MarkerOptions().position(d_latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.location)).title("Sender Location");
+            mMap.addMarker(d_marker);
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(d_latLng, 15));
+        }
 
-        DownloadTask downloadTask_s_r = new DownloadTask();
 
-        // Start downloading json data from Google Directions API
-        downloadTask_s_r.execute(url);
-
-
-        // draw line between sender and delivery
-        dest = new LatLng(d_lat,d_long);
-        url = getDirectionsUrl(origin, dest);
-
-        DownloadTask downloadTask_s_d = new DownloadTask();
-
-        // Start downloading json data from Google Directions API
-        downloadTask_s_d.execute(url);
+//        LatLng origin = new LatLng(s_lat,s_long);
+//        LatLng dest = new LatLng(r_lat,r_long);
+//        // draw line between sender and receiver
+//        // Getting URL to the Google Directions API
+//        String url = getDirectionsUrl(origin, dest);
+//
+//        DownloadTask downloadTask_s_r = new DownloadTask();
+//
+//        // Start downloading json data from Google Directions API
+//        downloadTask_s_r.execute(url);
+//
+//
+//        // draw line between sender and delivery
+//        dest = new LatLng(d_lat,d_long);
+//        url = getDirectionsUrl(origin, dest);
+//
+//        DownloadTask downloadTask_s_d = new DownloadTask();
+//
+//        // Start downloading json data from Google Directions API
+//        downloadTask_s_d.execute(url);
     }
 
     private class DownloadTask extends AsyncTask<String, Void, String> {
@@ -255,6 +304,38 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             urlConnection.disconnect();
         }
         return data;
+    }
+    public void my_location(View view) {
+        // location();
+    }
+
+    public void select_address(View view) {
+        if(select_address) {
+            if(fromsignup.equals("yes")) {
+                user_details.setAddress(address);
+                user_details.setAddress_lat(latitude);
+                user_details.setAddress_long(longitude);
+                Intent signup = new Intent(MapsActivity.this, sign_up.class);
+                signup.putExtra("user", user_details);
+                signup.putExtra("finish", true);
+                signup.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                finish();
+                startActivity(signup);
+            }else{
+                user_details.setAddress(address);
+                user_details.setAddress_lat(latitude);
+                user_details.setAddress_long(longitude);
+                Intent signup = new Intent(MapsActivity.this, EditUserInfoActivity.class);
+                signup.putExtra("user", user_details);
+                signup.putExtra("finish", true);
+                signup.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                finish();
+                startActivity(signup);
+            }
+        }
+        else
+            Toast.makeText(MapsActivity.this, "sorry must select location to continue", Toast.LENGTH_LONG).show();
+
     }
 
 }

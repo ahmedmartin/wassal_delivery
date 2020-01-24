@@ -32,6 +32,7 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -54,12 +55,12 @@ public class order_details extends AppCompatActivity {
 
     private user_data user_description;
 
-    private String delivery_type , city;
+    private String delivery_type , city, userId;
 
     private boolean accept = false;
 
     private Button btn_accept;
-
+    private FirebaseAuth mAuth;
     String d_id = "d_id"; // geb el data de ya 3mr /* ...................*/
 
 
@@ -68,6 +69,10 @@ public class order_details extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_order_details);
 
+        mAuth = FirebaseAuth.getInstance();
+
+        userId = mAuth.getCurrentUser().getUid();
+        d_id = userId;
         r_name = findViewById(R.id.r_name);
         r_phone = findViewById(R.id.r_phone);
         r_address = findViewById(R.id.r_address);
@@ -122,7 +127,7 @@ public class order_details extends AppCompatActivity {
 
     private void download_order_photo() {
 
-        String currentDate = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(new Date());
+        String currentDate = new SimpleDateFormat("dd-M-yyyy", Locale.getDefault()).format(new Date());
         final StorageReference food_img_ref = FirebaseStorage.getInstance().getReference()
                 .child("order").child(currentDate).child(city).child(delivery_type).child(order_description.getOrder_id());
         food_img_ref.getDownloadUrl().addOnCompleteListener(new OnCompleteListener<Uri>() {
@@ -153,7 +158,7 @@ public class order_details extends AppCompatActivity {
 
     public void accept_order(View view) {
         final DatabaseReference ref = FirebaseDatabase.getInstance().getReference().child("delivery").child(d_id).child("order");
-        String currentDate = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(new Date());
+        String currentDate = new SimpleDateFormat("dd-M-yyyy", Locale.getDefault()).format(new Date());
         final StorageReference img_ref = FirebaseStorage.getInstance().getReference()
                 .child("order").child(currentDate).child(city).child(delivery_type).child(order_description.getOrder_id());
         // لو هو داس ع الزرار لتانى مره  يبقى كده الاوردر وصل خلاص
