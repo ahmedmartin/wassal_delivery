@@ -83,9 +83,9 @@ public class LicenseActivity extends AppCompatActivity {
                                     Toast.makeText(LicenseActivity.this, "select image", Toast.LENGTH_SHORT).show();
                                 }
                                 else {
-                                    mDatabase.child("delivery").child(userId).child("delivery type").child("motorcycle").setValue("motorcycle");
+                                    mDatabase.child("delivery").child(userId).child("delivery type").child("motorcycle").setValue("Motorcycle");
                                     if(selectbicycle)
-                                        mDatabase.child("delivery").child(userId).child("delivery type").child("bicycle").setValue("bicycle");
+                                        mDatabase.child("delivery").child(userId).child("delivery type").child("bicycle").setValue("Bicycle");
                                     if(selectsubway)
                                         mDatabase.child("delivery").child(userId).child("delivery type").child("subway").setValue("subway");
                                     if(selecttrain)
@@ -113,7 +113,7 @@ public class LicenseActivity extends AppCompatActivity {
                                 else {
                                     mDatabase.child("delivery").child(userId).child("delivery type").child("car").setValue("Car");
                                     if(selectbicycle)
-                                        mDatabase.child("delivery").child(userId).child("delivery type").child("bicycle").setValue("bicycle");
+                                        mDatabase.child("delivery").child(userId).child("delivery type").child("bicycle").setValue("Bicycle");
                                     if(selectsubway)
                                         mDatabase.child("delivery").child(userId).child("delivery type").child("subway").setValue("subway");
                                     if(selecttrain)

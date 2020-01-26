@@ -77,7 +77,7 @@ public class sign_up extends AppCompatActivity {
                                                 mDatabase.child("person").child(userId).setValue(user);
                                                 DatabaseReference ref = mDatabase.child("delivery").child(userId).child("delivery type");
                                                 if (bicycle.isChecked()) {
-                                                    ref.child("bicycle").setValue("bicycle");
+                                                    ref.child("bicycle").setValue("Bicycle");
                                                 }
                                                 if (subway.isChecked()) {
                                                     ref.child("subway").setValue("subway");

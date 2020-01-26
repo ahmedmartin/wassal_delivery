@@ -157,8 +157,11 @@ public class order_details extends AppCompatActivity {
     }
 
     public void accept_order(View view) {
-        final DatabaseReference ref = FirebaseDatabase.getInstance().getReference().child("delivery").child(d_id).child("order");
         String currentDate = new SimpleDateFormat("dd-M-yyyy", Locale.getDefault()).format(new Date());
+        final DatabaseReference ref = FirebaseDatabase.getInstance().getReference().child("delivery").child(d_id).child("order");
+        final DatabaseReference pending = FirebaseDatabase.getInstance().getReference().child("person")
+                .child(order_description.getS_uid()).child("pending").child(currentDate).child(city)
+                .child(delivery_type).child(order_description.getOrder_id());
         final StorageReference img_ref = FirebaseStorage.getInstance().getReference()
                 .child("order").child(currentDate).child(city).child(delivery_type).child(order_description.getOrder_id());
         // لو هو داس ع الزرار لتانى مره  يبقى كده الاوردر وصل خلاص
@@ -174,6 +177,7 @@ public class order_details extends AppCompatActivity {
                         @Override
                         public void onComplete( Task<Void> task) {
                             if(task.isSuccessful()){
+                                pending.removeValue();
                                 Intent main = new Intent(order_details.this,MainActivity.class);
                                 main.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_CLEAR_TASK);
                                 startActivity(main);
@@ -182,6 +186,7 @@ public class order_details extends AppCompatActivity {
                                 Toast.makeText(order_details.this, task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     });
+
                 }
             });
             alart.show();
@@ -189,9 +194,13 @@ public class order_details extends AppCompatActivity {
         // لو هو داس ع الزرار لاول مره يبقى هو كده وافق انه يسلم الاوردر
         }else {
             ref.setValue(order_description);
+            pending.setValue(FirebaseAuth.getInstance().getCurrentUser().getUid());
             DatabaseReference remove_ref = FirebaseDatabase.getInstance().getReference().child("order").child(currentDate).
                     child(city).child(delivery_type).child(order_description.getOrder_id());
+            DatabaseReference remove_saved = FirebaseDatabase.getInstance().getReference().child("person").child(order_description.getS_uid())
+                    .child("saved").child(currentDate).child(city).child(delivery_type).child(order_description.getOrder_id());
             remove_ref.removeValue();
+            remove_saved.removeValue();
             btn_accept.setText("Delivered Successfully");
         }
 
@@ -208,6 +217,8 @@ public class order_details extends AppCompatActivity {
     public void cancel(View view) {
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference().child("order").child(order_description.getDate()).
                 child(city).child(delivery_type).child(order_description.getOrder_id());
+        DatabaseReference saved = FirebaseDatabase.getInstance().getReference().child("person").child(order_description.getS_uid())
+                .child("saved").child(order_description.getDate()).child(city).child(delivery_type).child(order_description.getOrder_id());
         order_description.setOrder_id(null);
         order_description.setDate(null);
         order_description.setDelivery_type(null);
@@ -219,13 +230,24 @@ public class order_details extends AppCompatActivity {
                 if(task.isSuccessful()){
                     DatabaseReference ref = FirebaseDatabase.getInstance().getReference().child("delivery").child(d_id).child("order");
                     ref.removeValue();
-                    finish();
                 }else
                     Toast.makeText(order_details.this, task.getException().getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
-
-    }
+        saved.setValue(order_description).addOnCompleteListener(new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(@NonNull Task<Void> task) {
+                if(task.isSuccessful()){
+                    DatabaseReference pending = FirebaseDatabase.getInstance().getReference().child("person")
+                            .child(order_description.getS_uid()).child("pending");
+                    pending.removeValue();
+                    finish();
+                }
+                else
+                    Toast.makeText(order_details.this, task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+     }
 
 
 

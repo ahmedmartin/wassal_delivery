@@ -119,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
         km_list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                String currentDate = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(new Date());
+                String currentDate = new SimpleDateFormat("dd-M-yyyy", Locale.getDefault()).format(new Date());
                 Intent details = new Intent(MainActivity.this,order_details.class);
                 orders_list.get(i).setCity(city);
                 orders_list.get(i).setDate(currentDate);
@@ -212,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-         ref= FirebaseDatabase.getInstance().getReference().child("order").child("23-1-2020").child(city).child(delivery_type);
+         ref= FirebaseDatabase.getInstance().getReference().child("order").child(currentDate).child(city).child(delivery_type);
 
          listener = new ValueEventListener() {
             @Override
